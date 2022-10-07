@@ -1,0 +1,25 @@
+Package: Lab6
+Type: Package
+Title: lab6
+Version: 4.2.1
+Date: 2022-10-6
+Author: person("mahnaz", "Mohammadzamani", email = "mahnaz.mzamani@gmail.com",
+                  role = c("aut", "cre"))
+Maintainer: Bita Tarfiee <b.tarfiee@gmail.com>
+Description: knapsack package
+License: GPL-2
+RoxygenNote: 7.2.1
+Encoding: UTF-8
+language: r
+LazyData: true
+Imports: profvis
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Depends: R (>= 3.5)
+exports: brute_force_knapsack,
+         knapsack_dynamic,
+         greedy_knapsack
+VignetteBuilder: knitr
