@@ -1,0 +1,552 @@
+---
+title: "lab_report_knapsack"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{lab_report_knapsack}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(Lab6)
+```
+
+## package Intro:
+The aim of this package is to study the effects of different algorithm with different computational complexity.
+
+### 1.1 The knapsack 
+The knapsack problem is a problem in combinatorial optimization: Given a set of items, each with a weight and a value, determine the number of each item to include in a collection so that the total weight is less than or equal to a given limit and the total value is as large as possible. It derives its name from the problem faced by someone who is constrained by a fixed-size knapsack and must fill it with the most valuable items.more details can be find in the link: [Knapsack Problem](https://en.wikipedia.org/wiki/Knapsack_problem) 
+
+#### Solving:
+there are several algorithms to solve, In this package Tree different algorithms with different computational complexity is defined and implemented.
+
+* Algorithms:
+
+   + Brute force search & Parallelize brute force search
+   + Dynamic programming
+   + Greedy heuristic
+   
+##### Brute force search & Parallelize brute force search
+In this algorithm we are going through all possible candidates for the solution and checking whether each candidate satisfies the problem's statement.
+The complexity of this algorithm is O(n^2).more details can be find in the link:
+[Brute force search](https://en.wikipedia.org/wiki/Brute-force_search)
+
+#### Parallelize code: 
+When you have a list of repetitive tasks, you may be able to speed it up by adding more computing power. If each task is completely independent of the others, then it is a prime candidate for executing those tasks in parallel
+
+
+#### Function Description:
+* Function name: knapsack_brute_force(x, W)
+* Input: x as a data.frame with two variable(v,w)
+* Input: W Knapsack size
+* Input: Parallel, if its FALSE, The Brute force search algorithm run and if Parallel is TRUE, The Parallelize brute force search run 
+* Output:  returns the maximum knapsack value 
+* Output: elements
+note: In this function we use intToBits() to find all different combinations.
+
+```{r, eval=TRUE}
+RNGversion(min(as.character(getRversion()),"3.5.3"))
+set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+n <- 2000
+knapsack_objects <-
+  data.frame(
+    w=sample(1:4000, size = n, replace = TRUE),
+    v=runif(n = n, 0, 10000))
+  
+
+library(parallel)
+brute_force_knapsack<-function(x,W,parallel=FALSE){
+  stopifnot(is.data.frame(x),W>0)
+  n<-2^(length(x[,2]))-1
+  d<-c()
+  myfunc <- function(i){
+    binary<-intToBits(i)
+    d<-which(binary == 1)
+    Len_d<-length(d)
+    weight<-c()
+    value<-c()
+    for(j in 1:Len_d)
+    {
+      weight[j]<-x[,1][d[j]]
+      value[j]<-x[,2][d[j]]
+    }
+    sum1<-sum(weight)
+    if (sum1<=W)
+    {
+      return(sum(value))
+    }else {
+      return(0)
+    }
+    
+  }
+  if (parallel==FALSE){
+    sum_value <- c(lapply(1:n, myfunc))
+  }else{
+    cores <- parallel::detectCores()
+    cl <- parallel::makeCluster(cores, type = "PSOCK")
+    sum_value <- parLapply(cl=cl, 1:n, fun = myfunc)
+    # Shut down cluster
+    parallel::stopCluster(cl)
+  }
+  
+
+  max_sum_value <- sum_value[[which.max(sum_value)]]
+  Sum_final<- round(max_sum_value)
+  i1<-which( sum_value== max_sum_value)
+  ele<-intToBits(i1)
+  element<-which(ele == 1)
+  Data<-list(value=Sum_final,elements=element)
+  return(Data)
+}
+
+```
+#### Question:
+How much time does it takes to run the algorithm for n = 16 objects?
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+RNGversion(min(as.character(getRversion()),"3.5.3"))
+set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+n <- 2000
+knapsack_objects <-
+  data.frame(
+    w=sample(1:4000, size = n, replace = TRUE),
+    v=runif(n = n, 0, 10000))
+  
+
+library(parallel)
+brute_force_knapsack<-function(x,W,parallel=FALSE){
+  stopifnot(is.data.frame(x),W>0)
+  n<-2^(length(x[,2]))-1
+  d<-c()
+  myfunc <- function(i){
+    binary<-intToBits(i)
+    d<-which(binary == 1)
+    Len_d<-length(d)
+    weight<-c()
+    value<-c()
+    for(j in 1:Len_d)
+    {
+      weight[j]<-x[,1][d[j]]
+      value[j]<-x[,2][d[j]]
+    }
+    sum1<-sum(weight)
+    if (sum1<=W)
+    {
+      return(sum(value))
+    }else {
+      return(0)
+    }
+    
+  }
+  if (parallel==FALSE){
+    sum_value <- c(lapply(1:n, myfunc))
+  }else{
+    cores <- parallel::detectCores()
+    cl <- parallel::makeCluster(cores, type = "PSOCK")
+    sum_value <- parLapply(cl=cl, 1:n, fun = myfunc)
+    # Shut down cluster
+    parallel::stopCluster(cl)
+  }
+  
+
+  max_sum_value <- sum_value[[which.max(sum_value)]]
+  Sum_final<- round(max_sum_value)
+  i1<-which( sum_value== max_sum_value)
+  ele<-intToBits(i1)
+  element<-which(ele == 1)
+  Data<-list(value=Sum_final,elements=element)
+  return(Data)
+}
+
+
+system.time(brute_force_knapsack(x = knapsack_objects[1:16,], W = 3500))
+
+```
+#####  Brute force search & Parallelize brute force search
+profiling Brute force search with parallelizing it, which can increase the speed of program running about 100%
+
+```{r, eval=TRUE}
+RNGversion(min(as.character(getRversion()),"3.5.3"))
+set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+n <- 2000
+knapsack_objects <-
+  data.frame(
+    w=sample(1:4000, size = n, replace = TRUE),
+    v=runif(n = n, 0, 10000))
+  
+
+library(parallel)
+brute_force_knapsack<-function(x,W,parallel=FALSE){
+  stopifnot(is.data.frame(x),W>0)
+  n<-2^(length(x[,2]))-1
+  d<-c()
+  myfunc <- function(i){
+    binary<-intToBits(i)
+    d<-which(binary == 1)
+    Len_d<-length(d)
+    weight<-c()
+    value<-c()
+    for(j in 1:Len_d)
+    {
+      weight[j]<-x[,1][d[j]]
+      value[j]<-x[,2][d[j]]
+    }
+    sum1<-sum(weight)
+    if (sum1<=W)
+    {
+      return(sum(value))
+    }else {
+      return(0)
+    }
+    
+  }
+  if (parallel==FALSE){
+    sum_value <- c(lapply(1:n, myfunc))
+  }else{
+    cores <- parallel::detectCores()
+    cl <- parallel::makeCluster(cores, type = "PSOCK")
+    sum_value <- parLapply(cl=cl, 1:n, fun = myfunc)
+    # Shut down cluster
+    parallel::stopCluster(cl)
+  }
+  
+
+  max_sum_value <- sum_value[[which.max(sum_value)]]
+  Sum_final<- round(max_sum_value)
+  i1<-which( sum_value== max_sum_value)
+  ele<-intToBits(i1)
+  element<-which(ele == 1)
+  Data<-list(value=Sum_final,elements=element)
+  return(Data)
+}
+
+
+```
+#### Question:
+How much time does it takes to run the algorithm for n = 16 objects?
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+RNGversion(min(as.character(getRversion()),"3.5.3"))
+set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+n <- 2000
+knapsack_objects <-
+  data.frame(
+    w=sample(1:4000, size = n, replace = TRUE),
+    v=runif(n = n, 0, 10000))
+  
+
+library(parallel)
+brute_force_knapsack<-function(x,W,parallel=FALSE){
+  stopifnot(is.data.frame(x),W>0)
+  n<-2^(length(x[,2]))-1
+  d<-c()
+  myfunc <- function(i){
+    binary<-intToBits(i)
+    d<-which(binary == 1)
+    Len_d<-length(d)
+    weight<-c()
+    value<-c()
+    for(j in 1:Len_d)
+    {
+      weight[j]<-x[,1][d[j]]
+      value[j]<-x[,2][d[j]]
+    }
+    sum1<-sum(weight)
+    if (sum1<=W)
+    {
+      return(sum(value))
+    }else {
+      return(0)
+    }
+    
+  }
+  if (parallel==FALSE){
+    sum_value <- c(lapply(1:n, myfunc))
+  }else{
+    cores <- parallel::detectCores()
+    cl <- parallel::makeCluster(cores, type = "PSOCK")
+    sum_value <- parLapply(cl=cl, 1:n, fun = myfunc)
+    # Shut down cluster
+    parallel::stopCluster(cl)
+  }
+  
+
+  max_sum_value <- sum_value[[which.max(sum_value)]]
+  Sum_final<- round(max_sum_value)
+  i1<-which( sum_value== max_sum_value)
+  ele<-intToBits(i1)
+  element<-which(ele == 1)
+  Data<-list(value=Sum_final,elements=element)
+  return(Data)
+}
+
+
+```
+
+##### Dynamic programming
+Dynamic Programming is mainly an optimization over plain recursion.
+This method is based on simplifying a complicated problem by breaking it down into simpler sub-problems in a recursive manner.
+The complexity of this algorithm is O(Wn).more details can be find in the link:
+[Dynamic programming](https://en.wikipedia.org/wiki/Dynamic_programming)
+
+#### Function Description:
+* Function name: knapsack_dynamic(x, W)
+* Input: x as a data.frame with two variable(v,w)
+* Input: W Knapsack size
+* Output:  returns the maximum knapsack value 
+* Output: elements
+
+
+```{r eval=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+RNGversion(min(as.character(getRversion()),"3.5.3"))
+set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+n <- 2000
+knapsack_objects <-
+  data.frame(
+    w=sample(1:4000, size = n, replace = TRUE),
+    v=runif(n = n, 0, 10000))
+  
+
+knapsack_dynamic<-function(x, W){
+  stopifnot(is.data.frame(x),W>0)
+  weight_mat<-x[,1]
+  Value_mat<-x[,2]
+  n<-length(Value_mat)
+  
+  Dyn_mat<-matrix(0,nrow=n+1,ncol=W+1)
+  for (i in 2:(n+1)){
+    k<-(i-1)
+    for(j in 2:(W+1)){
+      q<-(j-1)
+      if(weight_mat[k]>q){
+        Dyn_mat[i,j]<-Dyn_mat[k,j]
+      }else {
+        M1<-Dyn_mat[k,j]
+        M2<-Value_mat[k]
+        M3<-(q-weight_mat[k])
+        M4<-Dyn_mat[k,M3+1]
+        M5<-M4+M2
+        Dyn_mat[i,j]<-max(M1,M5)
+      }
+    }
+    
+  }
+  Value_final<-Dyn_mat[i,j]
+  Mat_final<-matrix(0,nrow=1,ncol=n)
+  
+  for (c in (n+1):2)
+  {
+    if(Dyn_mat[c,j]==Dyn_mat[c-1,j]){Mat_final[1,c-1]<-0
+    } else {
+      Mat_final[1,c-1]<-1
+      j<-(W-weight_mat[c-1])+1
+      
+    }
+  }
+  elements<-which(Mat_final==1)
+  value<-round(Value_final)
+  Data<-list(value=value,elements=elements)
+  return(Data)
+}
+
+
+knapsack_dynamic(x = knapsack_objects[1:8,], W = 3500)
+knapsack_dynamic(x = knapsack_objects[1:12,], W = 3500)
+knapsack_dynamic(x = knapsack_objects[1:8,], W = 2000)
+knapsack_dynamic(x = knapsack_objects[1:12,], W = 2000)
+system.time(knapsack_dynamic(x = knapsack_objects[1:500,], W = 3500))
+
+```
+#### Question:
+How much time does it takes to run the algorithm for n = 500 objects?
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+RNGversion(min(as.character(getRversion()),"3.5.3"))
+set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+n <- 2000
+knapsack_objects <-
+  data.frame(
+    w=sample(1:4000, size = n, replace = TRUE),
+    v=runif(n = n, 0, 10000))
+  
+
+knapsack_dynamic<-function(x, W){
+  stopifnot(is.data.frame(x),W>0)
+  weight_mat<-x[,1]
+  Value_mat<-x[,2]
+  n<-length(Value_mat)
+  
+  Dyn_mat<-matrix(0,nrow=n+1,ncol=W+1)
+  for (i in 2:(n+1)){
+    k<-(i-1)
+    for(j in 2:(W+1)){
+      q<-(j-1)
+      if(weight_mat[k]>q){
+        Dyn_mat[i,j]<-Dyn_mat[k,j]
+      }else {
+        M1<-Dyn_mat[k,j]
+        M2<-Value_mat[k]
+        M3<-(q-weight_mat[k])
+        M4<-Dyn_mat[k,M3+1]
+        M5<-M4+M2
+        Dyn_mat[i,j]<-max(M1,M5)
+      }
+    }
+    
+  }
+  Value_final<-Dyn_mat[i,j]
+  Mat_final<-matrix(0,nrow=1,ncol=n)
+  
+  for (c in (n+1):2)
+  {
+    if(Dyn_mat[c,j]==Dyn_mat[c-1,j]){Mat_final[1,c-1]<-0
+    } else {
+      Mat_final[1,c-1]<-1
+      j<-(W-weight_mat[c-1])+1
+      
+    }
+  }
+  elements<-which(Mat_final==1)
+  value<-round(Value_final)
+  Data<-list(value=value,elements=elements)
+  return(Data)
+}
+
+system.time(knapsack_dynamic(x = knapsack_objects[1:500,], W = 3500))
+
+```
+`
+
+##### Greedy heuristic
+A greedy algorithm is any algorithm that follows the problem-solving heuristic of making the locally optimal choice at each stage.The complexity of this algorithm is O(nlog n).more details can be find in the link
+[Greedy Algorithm](https://en.wikipedia.org/wiki/Greedy_algorithm)
+
+#### Function Description:
+* Function name: greedy_knapsack(x, W)
+* Input: x as a data.frame with two variable(v,w)
+* Input: W Knapsack size
+* Output:  returns the maximum knapsack value 
+* Output: elements
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+RNGversion(min(as.character(getRversion()),"3.5.3"))
+set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+n <- 2000
+knapsack_objects <-
+  data.frame(
+    w=sample(1:4000, size = n, replace = TRUE),
+    v=runif(n = n, 0, 10000))
+
+greedy_knapsack<-function(x,W){
+  stopifnot(is.data.frame(x),W>0)
+  i<-1
+  weight_mat<-x[,1]
+  Value_mat<-x[,2]
+  n<-length(Value_mat)
+  mat_final_greedy<-c(Value_mat/weight_mat)
+  mat_final_greedy1<-sort(mat_final_greedy,decreasing = TRUE)
+  i<-1
+  Value<-c()
+  elements<-c()
+  repeat  
+  {
+    d<-which(mat_final_greedy == mat_final_greedy1[i])
+    W<- W-weight_mat[d]
+    Value[i]<-Value_mat[d]
+    elements[i]<-d
+    i<-i+1
+    if (W<0){
+      break
+    }
+  }
+  L<-length(Value)
+  Value<-Value[1:L-1]
+  Value<- round(sum(Value))
+  L1<-length(elements)
+  elements<-elements[1:L1-1]
+  Data<- list(value=Value, elements=elements)
+  return(Data)
+}
+greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
+greedy_knapsack(x = knapsack_objects[1:1200,], W = 2000)
+system.time(greedy_knapsack(x = knapsack_objects[1:1000000,], W = 2000))
+```
+
+#### Question:
+How much time does it takes to run the algorithm for n = 1000000 objects?
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+RNGversion(min(as.character(getRversion()),"3.5.3"))
+set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+n <- 2000
+knapsack_objects <-
+  data.frame(
+    w=sample(1:4000, size = n, replace = TRUE),
+    v=runif(n = n, 0, 10000))
+
+greedy_knapsack<-function(x,W){
+  stopifnot(is.data.frame(x),W>0)
+  i<-1
+  weight_mat<-x[,1]
+  Value_mat<-x[,2]
+  n<-length(Value_mat)
+  mat_final_greedy<-c(Value_mat/weight_mat)
+  mat_final_greedy1<-sort(mat_final_greedy,decreasing = TRUE)
+  i<-1
+  Value<-c()
+  elements<-c()
+  repeat  
+  {
+    d<-which(mat_final_greedy == mat_final_greedy1[i])
+    W<- W-weight_mat[d]
+    Value[i]<-Value_mat[d]
+    elements[i]<-d
+    i<-i+1
+    if (W<0){
+      break
+    }
+  }
+  L<-length(Value)
+  Value<-Value[1:L-1]
+  Value<- round(sum(Value))
+  L1<-length(elements)
+  elements<-elements[1:L1-1]
+  Data<- list(value=Value, elements=elements)
+  return(Data)
+}
+system.time(greedy_knapsack(x = knapsack_objects[1:1000000,], W = 2000))
+```
+
+
+#### Profiling code
+
+```{r fig.height=5, fig.width=5, message=FALSE, warning=FALSE, paged.print=FALSE}
+RNGversion(min(as.character(getRversion()),"3.5.3"))
+ set.seed(42, kind = "Mersenne-Twister", normal.kind = "Inversion")
+ n <- 2000
+ knapsack_objects <-
+   data.frame(
+     w=sample(1:4000, size = n, replace = TRUE),
+     v=runif(n = n, 0, 10000)
+   )
+ W <- 3500
+
+
+library(profvis)
+
+
+profvis::profvis({brute_force_knapsack(x = knapsack_objects[1:8,], W = 3500,parallel = FALSE)})
+
+profvis::profvis({brute_force_knapsack(x = knapsack_objects[1:8,], W = 3500,parallel = TRUE)})
+
+
+```
+
+
