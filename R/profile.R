@@ -12,7 +12,7 @@
 
 
 #library(profvis)
-profvis::profvis({greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)})
+#profvis::profvis({greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)})
 
 profvis::profvis({brute_force_knapsack(x = knapsack_objects[1:8,], W = 3500,parallel = FALSE)})
 
